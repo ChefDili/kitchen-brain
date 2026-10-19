@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E8D5B7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kitchen Brain">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Kitchen Brain</title>
+<style>
+:root {
+  --sand: #E8D5B7;
+  --ink: #39352F;
+  --muted: #81776A;
+  --green: #66785F;
+  --paper: #FFFCF6;
+  --line: #E5D9C8;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html { background: var(--sand); }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 24px 14px;
+  background: var(--sand);
+  color: var(--ink);
+  font-family: Arial, sans-serif;
+}
+.app { max-width: 900px; margin: auto; }
+header { margin-bottom: 24px; }
+h1 { margin: 0 0 6px; font-size: 30px; }
+.subtitle { color: var(--muted); margin: 0; }
+.panel {
+  background: var(--paper);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 5px 18px #78664A12;
+}
+.panel h2 { margin: 0 0 16px; font-size: 20px; }
+.topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+button, input {
+  font: inherit;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+button {
+  border: 0;
+  background: var(--green);
+  color: white;
+  cursor: pointer;
+}
+button.secondary { background: #EEE5D8; color: var(--ink); }
+button:active { transform: scale(.98); }
+.month-title { font-weight: bold; font-size: 19px; }
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 18px;
+}
+.weekday {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 6px 0;
+}
+.day {
+  min-height: 76px;
+  padding: 7px 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  text-align: center;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+.day.empty { background: transparent; border-color: transparent; cursor: default; }
+.day.today { border: 2px solid var(--green); }
+.day.selected { background: #E6EBDD; border-color: var(--green); }
+.day .number { font-weight: bold; }
+.day .hours { display: block; color: var(--green); font-size: 11px; margin-top: 7px; }
+.day .dot { display: block; color: var(--green); font-size: 10px; margin-top: 2px; }
+.day .money { display: block; color: var(--ink); font-weight: bold; font-size: 11px; margin-top: 3px; }
+.stat em { display: block; font-style: normal; font-weight: bold; color: var(--green); font-size: 15px; margin-bottom: 4px; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+.stat { background: #F3EBDD; padding: 12px; border-radius: 12px; }
+.stat strong { display: block; font-size: 22px; margin-bottom: 4px; }
+.stat span { font-size: 12px; color: var(--muted); }
+label { display: block; font-size: 13px; margin: 12px 0 6px; color: var(--muted); }
+input { width: 100%; border: 1px solid var(--line); background: white; color: var(--ink); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.full { grid-column: 1 / -1; }
+.actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.shift, .task {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
+  background: white;
+}
+.shift { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.shift small { color: var(--muted); display: block; margin-top: 5px; }
+.task { display: flex; align-items: center; gap: 10px; }
+.task input { width: 18px; height: 18px; padding: 0; flex: none; }
+.task span { flex: 1; overflow-wrap: anywhere; }
+.task.done span { text-decoration: line-through; color: var(--muted); }
+.task button, .shift button { padding: 7px 10px; background: #EEE5D8; color: var(--ink); }
+.add-row { display: flex; gap: 8px; }
+.add-row input { min-width: 0; }
+.hint { color: var(--muted); font-size: 13px; line-height: 1.5; }
+@media (max-width: 520px) {
+  body { padding: 14px 8px; }
+  .panel { padding: 14px; }
+  h1 { font-size: 26px; }
+  .day { min-height: 62px; font-size: 13px; }
+  .day .hours { font-size: 10px; }
+  .day .money { font-size: 9px; }
+  .stats { gap: 6px; }
+  .stat { padding: 9px; }
+  .stat strong { font-size: 19px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .full { grid-column: auto; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Kitchen Brain 👨‍🍳</h1>
+    <p class="subtitle">Your shifts, hours and daily tasks — in one place.</p>
+  </header>
+
+  <section class="panel">
+    <div class="topline">
+      <h2>Work calendar</h2>
+      <div>
+        <button class="secondary" id="prevMonth" aria-label="Previous month">‹</button>
+        <button class="secondary" id="nextMonth" aria-label="Next month">›</button>
+      </div>
+    </div>
+    <div class="month-title" id="monthTitle"></div>
+    <div class="calendar" id="calendar"></div>
+    <div class="stats">
+      <div class="stat"><strong id="dayHours">0 h</strong><em id="dayMoney">0 €</em><span>Selected day</span></div>
+      <div class="stat"><strong id="weekHours">0 h</strong><em id="weekMoney">0 €</em><span>Week of selected day</span></div>
+      <div class="stat"><strong id="monthHours">0 h</strong><em id="monthMoney">0 €</em><span>Month shown</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 id="shiftHeading">Add a shift</h2>
+    <p class="hint">Choose a date and enter your start and finish times. Break is optional.</p>
+    <div class="form-grid">
+      <div class="full">
+        <label for="shiftDate">Date</label>
+        <input type="date" id="shiftDate">
+      </div>
+      <div>
+        <label for="startTime">Start time</label>
+        <input type="time" id="startTime" value="09:00">
+      </div>
+      <div>
+        <label for="endTime">Finish time</label>
+        <input type="time" id="endTime" value="17:00">
+      </div>
+      <div class="full">
+        <label for="breakMinutes">Unpaid break in minutes (optional)</label>
+        <input type="number" id="breakMinutes" min="0" value="0">
+      </div>
+      <div class="full">
+        <label for="hourlyRate">Hourly rate, € (remembered for the next shift)</label>
+        <input type="number" id="hourlyRate" min="0" step="any" inputmode="decimal" placeholder="For example: 18.50">
+      </div>
+      <div class="full">
+        <label for="shiftNote">Note (optional)</label>
+        <input id="shiftNote" placeholder="For example: evening service">
+      </div>
+    </div>
+    <div class="actions">
+      <button id="saveShift">Save shift</button>
+      <button class="secondary" id="cancelEdit" hidden>Cancel edit</button>
+    </div>
+    <h2 style="margin-top:24px">Shifts on selected day</h2>
+    <div id="shiftList"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Kitchen tasks</h2>
+    <div class="add-row">
+      <input id="taskInput" placeholder="Enter a task…" maxlength="120">
+      <button id="addTask">Add</button>
+    </div>
+    <div id="taskList"></div>
+    <p class="hint">Tasks and shifts are saved on this device. Make a backup from time to time.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Backup</h2>
+    <p class="hint">Export saves all shifts, rates and tasks to a file. Import restores them, for example on a new phone.</p>
+    <div class="actions">
+      <button id="exportData">Export data</button>
+      <button class="secondary" id="importData">Import data</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="hint" id="backupMsg"></p>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const getToday = () => new Date();
+const dateKey = date => [
+  date.getFullYear(),
+  String(date.getMonth() + 1).padStart(2, "0"),
+  String(date.getDate()).padStart(2, "0")
+].join("-");
+
+function loadList(key) {
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+const isValidShift = s =>
+  s && typeof s.date === "string" && /^\d{2}:\d{2}$/.test(s.start) && /^\d{2}:\d{2}$/.test(s.end);
+
+let selectedDate = dateKey(getToday());
+let shownYear = getToday().getFullYear();
+let shownMonth = getToday().getMonth();
+let shifts = loadList("kb-shifts").filter(isValidShift);
+let tasks = loadList("kb-tasks").filter(t => t && typeof t.text === "string");
+let editingId = null;
+let defaultRate = 0;
+try { defaultRate = Math.max(0, Number(localStorage.getItem("kb-rate")) || 0); } catch (e) {}
+
+$("shiftDate").value = selectedDate;
+
+function saveData() {
+  try {
+    localStorage.setItem("kb-shifts", JSON.stringify(shifts));
+    localStorage.setItem("kb-tasks", JSON.stringify(tasks));
+    localStorage.setItem("kb-rate", String(defaultRate));
+  } catch (e) {
+    /* storage unavailable: app keeps working in memory */
+  }
+}
+
+function minutesBetween(start, end) {
+  const s = start.split(":").map(Number);
+  const e = end.split(":").map(Number);
+  let minutes = e[0] * 60 + e[1] - s[0] * 60 - s[1];
+  if (minutes < 0) minutes += 1440;
+  return minutes;
+}
+
+function hoursForShift(shift) {
+  const minutes = minutesBetween(shift.start, shift.end) - Math.max(0, Number(shift.breakMinutes) || 0);
+  return Math.max(0, minutes / 60);
+}
+
+function hoursText(hours) {
+  return Number(hours.toFixed(2)).toString() + " h";
+}
+
+function moneyForShift(shift) {
+  return hoursForShift(shift) * (Math.max(0, Number(shift.rate)) || 0);
+}
+
+function moneyText(amount) {
+  return amount.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " €";
+}
+
+function totalMoney(list) {
+  return list.reduce((sum, shift) => sum + moneyForShift(shift), 0);
+}
+
+function shiftsOn(date) {
+  return shifts
+    .filter(shift => shift.date === date)
+    .sort((a, b) => a.start.localeCompare(b.start));
+}
+
+function totalHours(list) {
+  return list.reduce((sum, shift) => sum + hoursForShift(shift), 0);
+}
+
+function renderCalendar() {
+  const todayKey = dateKey(getToday());
+  const first = new Date(shownYear, shownMonth, 1);
+  const lastDay = new Date(shownYear, shownMonth + 1, 0).getDate();
+  const offset = (first.getDay() + 6) % 7;
+  $("monthTitle").textContent = first.toLocaleDateString("en-GB", {
+    month: "long", year: "numeric"
+  });
+  const calendar = $("calendar");
+  calendar.innerHTML = "";
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach(day => {
+    const cell = document.createElement("div");
+    cell.className = "weekday";
+    cell.textContent = day;
+    calendar.appendChild(cell);
+  });
+  for (let i = 0; i < offset; i++) {
+    const blank = document.createElement("div");
+    blank.className = "day empty";
+    calendar.appendChild(blank);
+  }
+  for (let number = 1; number <= lastDay; number++) {
+    const date = dateKey(new Date(shownYear, shownMonth, number));
+    const dayShifts = shiftsOn(date);
+    const cell = document.createElement("button");
+    cell.className = "day";
+    cell.setAttribute("aria-label", date + (dayShifts.length ? ", " + hoursText(totalHours(dayShifts)) : ""));
+    if (date === todayKey) cell.classList.add("today");
+    if (date === selectedDate) cell.classList.add("selected");
+    const dayNumber = document.createElement("span");
+    dayNumber.className = "number";
+    dayNumber.textContent = number;
+    cell.appendChild(dayNumber);
+    if (dayShifts.length) {
+      const hours = document.createElement("span");
+      hours.className = "hours";
+      hours.textContent = hoursText(totalHours(dayShifts));
+      cell.appendChild(hours);
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      dot.textContent = dayShifts.length === 1 ? "Shift" : dayShifts.length + " shifts";
+      cell.appendChild(dot);
+      const earned = totalMoney(dayShifts);
+      if (earned > 0) {
+        const money = document.createElement("span");
+        money.className = "money";
+        money.textContent = moneyText(earned);
+        cell.appendChild(money);
+      }
+    }
+    cell.addEventListener("click", () => {
+      selectedDate = date;
+      cancelEdit();
+      renderAll();
+    });
+    calendar.appendChild(cell);
+  }
+  const selected = new Date(selectedDate + "T12:00:00");
+  const monday = new Date(selected);
+  monday.setDate(selected.getDate() - ((selected.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 7);
+  const weekShifts = shifts.filter(shift => {
+    const d = new Date(shift.date + "T12:00:00");
+    return d >= monday && d < sunday;
+  });
+  const monthShifts = shifts.filter(shift => {
+    const d = new Date(shift.date + "T12:00:00");
+    return d.getFullYear() === shownYear && d.getMonth() === shownMonth;
+  });
+  $("dayHours").textContent = hoursText(totalHours(shiftsOn(selectedDate)));
+  $("weekHours").textContent = hoursText(totalHours(weekShifts));
+  $("monthHours").textContent = hoursText(totalHours(monthShifts));
+  $("dayMoney").textContent = moneyText(totalMoney(shiftsOn(selectedDate)));
+  $("weekMoney").textContent = moneyText(totalMoney(weekShifts));
+  $("monthMoney").textContent = moneyText(totalMoney(monthShifts));
+}
+
+function renderShifts() {
+  const list = $("shiftList");
+  list.innerHTML = "";
+  const dayShifts = shiftsOn(selectedDate);
+  if (!dayShifts.length) {
+    list.innerHTML = '<p class="hint">No shifts for this day yet.</p>';
+    return;
+  }
+  dayShifts.forEach(shift => {
+    const item = document.createElement("div");
+    item.className = "shift";
+    const info = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = shift.start + "–" + shift.end + " · " + hoursText(hoursForShift(shift)) +
+      (Number(shift.rate) > 0 ? " · " + moneyText(moneyForShift(shift)) : "");
+    info.appendChild(title);
+    if (shift.note) {
+      const note = document.createElement("small");
+      note.textContent = shift.note;
+      info.appendChild(note);
+    }
+    const actions = document.createElement("div");
+    const edit = document.createElement("button");
+    edit.textContent = "Edit";
+    edit.addEventListener("click", () => editShift(shift.id));
+    const remove = document.createElement("button");
+    remove.textContent = "Delete";
+    remove.style.marginLeft = "5px";
+    remove.addEventListener("click", () => {
+      shifts = shifts.filter(s => s.id !== shift.id);
+      if (editingId === shift.id) cancelEdit();
+      saveData();
+      renderAll();
+    });
+    actions.append(edit, remove);
+    item.append(info, actions);
+    list.appendChild(item);
+  });
+}
+
+function resetShiftForm() {
+  editingId = null;
+  $("shiftHeading").textContent = "Add a shift";
+  $("saveShift").textContent = "Save shift";
+  $("cancelEdit").hidden = true;
+  $("startTime").value = "09:00";
+  $("endTime").value = "17:00";
+  $("breakMinutes").value = "0";
+  $("hourlyRate").value = defaultRate || "";
+  $("shiftNote").value = "";
+  $("shiftDate").value = selectedDate;
+}
+
+function cancelEdit() {
+  resetShiftForm();
+}
+
+function editShift(id) {
+  const shift = shifts.find(s => s.id === id);
+  if (!shift) return;
+  editingId = id;
+  selectedDate = shift.date;
+  $("shiftDate").value = shift.date;
+  $("startTime").value = shift.start;
+  $("endTime").value = shift.end;
+  $("breakMinutes").value = shift.breakMinutes || 0;
+  $("hourlyRate").value = shift.rate || "";
+  $("shiftNote").value = shift.note || "";
+  $("shiftHeading").textContent = "Edit shift";
+  $("saveShift").textContent = "Update shift";
+  $("cancelEdit").hidden = false;
+  const d = new Date(shift.date + "T12:00:00");
+  shownYear = d.getFullYear();
+  shownMonth = d.getMonth();
+  renderAll();
+}
+
+$("shiftDate").addEventListener("change", () => {
+  const value = $("shiftDate").value;
+  if (!value) {
+    $("shiftDate").value = selectedDate;
+    return;
+  }
+  // While editing, the date field only sets the new date for the shift;
+  // otherwise it just moves the calendar, without wiping typed times.
+  if (editingId) return;
+  selectedDate = value;
+  const d = new Date(selectedDate + "T12:00:00");
+  shownYear = d.getFullYear();
+  shownMonth = d.getMonth();
+  renderAll();
+});
+
+$("saveShift").addEventListener("click", () => {
+  const date = $("shiftDate").value;
+  const start = $("startTime").value;
+  const end = $("endTime").value;
+  const breakMinutes = Math.max(0, Number($("breakMinutes").value) || 0);
+  const rate = Math.max(0, Number($("hourlyRate").value) || 0);
+  if (!date || !start || !end) {
+    alert("Please enter a date, start time and finish time.");
+    return;
+  }
+  if (breakMinutes >= minutesBetween(start, end) && start !== end) {
+    alert("The break can't be as long as the whole shift.");
+    return;
+  }
+  const shift = {
+    id: editingId || (Date.now().toString() + Math.random().toString(16).slice(2)),
+    date, start, end, breakMinutes, rate,
+    note: $("shiftNote").value.trim()
+  };
+  if (editingId) {
+    shifts = shifts.map(s => s.id === editingId ? shift : s);
+  } else {
+    shifts.push(shift);
+  }
+  selectedDate = date;
+  defaultRate = rate;
+  const d = new Date(date + "T12:00:00");
+  shownYear = d.getFullYear();
+  shownMonth = d.getMonth();
+  saveData();
+  resetShiftForm();
+  renderAll();
+});
+
+$("cancelEdit").addEventListener("click", cancelEdit);
+$("prevMonth").addEventListener("click", () => {
+  shownMonth--;
+  if (shownMonth < 0) { shownMonth = 11; shownYear--; }
+  renderCalendar();
+});
+$("nextMonth").addEventListener("click", () => {
+  shownMonth++;
+  if (shownMonth > 11) { shownMonth = 0; shownYear++; }
+  renderCalendar();
+});
+
+function renderTasks() {
+  const list = $("taskList");
+  list.innerHTML = "";
+  if (!tasks.length) {
+    list.innerHTML = '<p class="hint">Your tasks will appear here.</p>';
+    return;
+  }
+  tasks.forEach(task => {
+    const item = document.createElement("div");
+    item.className = "task" + (task.done ? " done" : "");
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = !!task.done;
+    check.addEventListener("change", () => {
+      task.done = check.checked;
+      saveData();
+      renderTasks();
+    });
+    const text = document.createElement("span");
+    text.textContent = task.text;
+    const remove = document.createElement("button");
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => {
+      tasks = tasks.filter(t => t.id !== task.id);
+      saveData();
+      renderTasks();
+    });
+    item.append(check, text, remove);
+    list.appendChild(item);
+  });
+}
+
+function addTask() {
+  const text = $("taskInput").value.trim();
+  if (!text) {
+    $("taskInput").focus();
+    return;
+  }
+  tasks.push({
+    id: Date.now().toString() + Math.random().toString(16).slice(2),
+    text, done: false
+  });
+  $("taskInput").value = "";
+  saveData();
+  renderTasks();
+}
+$("addTask").addEventListener("click", addTask);
+$("taskInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") addTask();
+});
+
+function backupMessage(text) {
+  $("backupMsg").textContent = text;
+}
+
+async function exportData() {
+  const payload = JSON.stringify({
+    app: "kitchen-brain", version: 1,
+    exported: new Date().toISOString(),
+    shifts, tasks, rate: defaultRate
+  }, null, 2);
+  const name = "kitchen-brain-" + dateKey(getToday()) + ".json";
+  try {
+    const file = new File([payload], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Kitchen Brain backup" });
+      backupMessage("Backup shared.");
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;
+  }
+  const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  backupMessage("Backup file created.");
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || data.app !== "kitchen-brain") throw new Error("not a backup");
+      const newShifts = (Array.isArray(data.shifts) ? data.shifts : []).filter(isValidShift);
+      const newTasks = (Array.isArray(data.tasks) ? data.tasks : []).filter(t => t && typeof t.text === "string");
+      if (!confirm("Replace current data with the backup (" + newShifts.length + " shifts, " + newTasks.length + " tasks)?")) return;
+      shifts = newShifts;
+      tasks = newTasks;
+      defaultRate = Math.max(0, Number(data.rate) || 0);
+      saveData();
+      resetShiftForm();
+      renderAll();
+      backupMessage("Backup restored.");
+    } catch (e) {
+      backupMessage("This file is not a Kitchen Brain backup.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+$("exportData").addEventListener("click", exportData);
+$("importData").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", () => {
+  const file = $("importFile").files[0];
+  if (file) importData(file);
+  $("importFile").value = "";
+});
+
+function renderAll() {
+  renderCalendar();
+  renderShifts();
+  renderTasks();
+}
+renderAll();
+
+if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
